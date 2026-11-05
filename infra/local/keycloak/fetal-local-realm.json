@@ -1,0 +1,82 @@
+{
+  "realm": "fetal-local",
+  "enabled": true,
+  "registrationAllowed": false,
+
+  "roles": {
+    "realm": [
+      {
+        "name": "DOCTOR"
+      },
+      {
+        "name": "TECHNICIAN"
+      },
+      {
+        "name": "HOSPITAL_ADMIN"
+      },
+      {
+        "name": "SUPER_ADMIN"
+      }
+    ]
+  },
+
+  "clients": [
+    {
+      "clientId": "fetal-web",
+      "name": "Fetal Biometry Web",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ]
+    }
+  ],
+
+  "users": [
+    {
+      "username": "doctor@local.test",
+      "email": "doctor@local.test",
+      "firstName": "Local",
+      "lastName": "Doctor",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "doctor123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "DOCTOR"
+      ]
+    },
+
+    {
+      "username": "admin@local.test",
+      "email": "admin@local.test",
+      "firstName": "Local",
+      "lastName": "Admin",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "HOSPITAL_ADMIN"
+      ]
+    }
+  ]
+}

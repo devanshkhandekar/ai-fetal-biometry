@@ -1,0 +1,130 @@
+services:
+
+  inference-worker-real-thin:
+
+    image: fetal-biometry-worker-thin:phase4
+
+    profiles:
+      - real-gpu-thin
+
+    depends_on:
+      postgres:
+        condition: service_started
+
+      minio:
+        condition: service_started
+
+      elasticmq:
+        condition: service_started
+
+      keycloak:
+        condition: service_started
+
+    working_dir: /stack/services/platform
+
+    env_file:
+      - .env
+      - scripts/phase2.env
+
+    # IMPORTANT:
+    # The SaaS worker runs with the SMALL worker Python,
+    # NOT with fetal_biometry_unified.
+    entrypoint:
+      - /opt/worker/bin/python
+
+    command:
+      - -m
+      - app.worker_inference
+
+    environment:
+
+      DATABASE_URL: >-
+        postgresql+psycopg://fetal:${POSTGRES_PASSWORD:-fetal_local_password}@postgres:5432/${POSTGRES_DB:-fetal_biometry}
+
+      S3_INTERNAL_ENDPOINT: http://minio:9000
+
+      S3_PUBLIC_ENDPOINT: http://localhost:9000
+
+      SQS_ENDPOINT: http://elasticmq:9324
+
+      OIDC_JWKS_URL: >-
+        http://keycloak:8080/realms/fetal-local/protocol/openid-connect/certs
+
+      # ---------------------------------------------------------
+      # Worker -> real model subprocess
+      # ---------------------------------------------------------
+
+      PIPELINE_MODE: subprocess
+
+      # These are intentionally the ML environment.
+      # worker_inference itself DOES NOT use this Python.
+      PIPELINE_PYTHON: >-
+        /home/devanshot/miniconda3/envs/fetal_biometry_unified/bin/python
+
+      HRNET_PYTHON: >-
+        /home/devanshot/miniconda3/envs/fetal_biometry_unified/bin/python
+
+      PIPELINE_BRIDGE_SCRIPT: /stack/ml/bridge_cli.py
+
+      MODEL_REPO_PATH: >-
+        /media/devanshot/Storage/ubuntu_universe/Devansh_Research/AI_Fetal_Ultrasound_Biometry/mvp_tested_versions/fetal_biometry_devansh_mvp_ellipse_ga_robust_complete/fetal_biometry_devansh_mvp_ellipse_ga_robust
+
+      PROJECT_BACKEND_CONFIG: >-
+        /media/devanshot/Storage/ubuntu_universe/Devansh_Research/AI_Fetal_Ultrasound_Biometry/mvp_tested_versions/fetal_biometry_devansh_mvp_ellipse_ga_robust_complete/fetal_biometry_devansh_mvp_ellipse_ga_robust/configs/project_backend.json
+
+      REAL_SCAN_MODULE: src.orchestration.saas_callable
+
+      REAL_SCAN_FUNCTION: run_scan
+
+      REAL_EFW_MODULE: src.orchestration.saas_callable
+
+      REAL_EFW_FUNCTION: calculate_study_efw
+
+      ENABLE_STUDY_AGGREGATION: "true"
+
+      ORCHESTRATION_ROUTING_ENABLED: "true"
+
+      ORCHESTRATION_ALLOW_QUALITY_REVIEW_ROUTE: "true"
+
+      # ---------------------------------------------------------
+      # Small-GPU settings
+      # ---------------------------------------------------------
+
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+
+      CUDA_MODULE_LOADING: LAZY
+
+      NVIDIA_VISIBLE_DEVICES: all
+
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+
+      # Worker code + bridge + real model repository
+      PYTHONPATH: >-
+        /stack/services/platform:/stack/ml:/media/devanshot/Storage/ubuntu_universe/Devansh_Research/AI_Fetal_Ultrasound_Biometry/mvp_tested_versions/fetal_biometry_devansh_mvp_ellipse_ga_robust_complete/fetal_biometry_devansh_mvp_ellipse_ga_robust
+
+    volumes:
+
+      # Existing validated ML Conda environment.
+      - /home/devanshot/miniconda3/envs/fetal_biometry_unified:/home/devanshot/miniconda3/envs/fetal_biometry_unified:ro
+
+      # Existing validated model repository.
+      - /media/devanshot/Storage/ubuntu_universe/Devansh_Research/AI_Fetal_Ultrasound_Biometry/mvp_tested_versions/fetal_biometry_devansh_mvp_ellipse_ga_robust_complete/fetal_biometry_devansh_mvp_ellipse_ga_robust:/media/devanshot/Storage/ubuntu_universe/Devansh_Research/AI_Fetal_Ultrasound_Biometry/mvp_tested_versions/fetal_biometry_devansh_mvp_ellipse_ga_robust_complete/fetal_biometry_devansh_mvp_ellipse_ga_robust:rw
+
+      # SaaS inference worker source.
+      - ./services/platform:/stack/services/platform:ro
+
+      # Bridge / adapters.
+      - ./ml:/stack/ml:ro
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+
+    # Keep restart disabled during Phase-4 debugging.
+    # Once everything passes, we can switch to unless-stopped.
+    restart: "no"

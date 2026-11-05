@@ -1,0 +1,165 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fetal_biometry}
+      POSTGRES_USER: ${POSTGRES_USER:-fetal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fetal_local_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fetal} -d ${POSTGRES_DB:-fetal_biometry}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Service name intentionally remains `minio` so existing S3 endpoint
+  # http://minio:9000 keeps working. The implementation is RustFS.
+  minio:
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-FETALLOCAL}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-fetal_local_secret_123456789}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:9000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  # One-shot bucket bootstrap using the same boto3 stack as the API.
+  minio-init:
+    build:
+      context: ./services/platform
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: python -m app.init_storage
+    volumes:
+      - ./services/platform:/app
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+
+  elasticmq:
+    image: softwaremill/elasticmq-native:latest
+    ports:
+      - "9324:9324"
+      - "9325:9325"
+    volumes:
+      - ./infra/local/elasticmq.conf:/opt/elasticmq.conf:ro
+    command: ["-Dconfig.file=/opt/elasticmq.conf"]
+
+  keycloak:
+    image: keycloak/keycloak:26.7.4
+
+    command:
+      - start-dev
+      - --import-realm
+
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin123
+
+    ports:
+      - "8081:8080"
+
+    volumes:
+      - keycloakdata:/opt/keycloak/data
+      - ./infra/local/keycloak:/opt/keycloak/data/import:ro
+
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./services/platform
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./services/platform:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      elasticmq:
+        condition: service_started
+      keycloak:
+        condition: service_started
+
+  inference-worker-mock:
+    build:
+      context: ./services/platform
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: python -m app.worker_inference
+    volumes:
+      - ./services/platform:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      elasticmq:
+        condition: service_started
+    profiles: ["mock-worker"]
+
+  report-worker:
+    build:
+      context: ./services/platform
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: python -m app.worker_report
+    volumes:
+      - ./services/platform:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      elasticmq:
+        condition: service_started
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost:8081}
+      VITE_KEYCLOAK_REALM: ${VITE_KEYCLOAK_REALM:-fetal-local}
+      VITE_KEYCLOAK_CLIENT_ID: ${VITE_KEYCLOAK_CLIENT_ID:-fetal-web}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/web:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      - api
+      - keycloak
+
+volumes:
+  pgdata:
+  miniodata:
+  keycloakdata:
+  web_node_modules:

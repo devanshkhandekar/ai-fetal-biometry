@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: sans-serif; margin: 34px; color: #111827; }
+    h1 { margin-bottom: 4px; }
+    .muted { color: #6b7280; }
+    table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+    th, td { border-bottom: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+    .warning { background: #fff7ed; padding: 10px; margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <h1>Fetal Biometry Report</h1>
+  <div class="muted">Type: {{ report.report_type }} | Language: {{ report.language }}</div>
+  <p><strong>Patient ID:</strong> {{ data.patient.external_id }}</p>
+  {% if data.patient.display_name %}<p><strong>Patient:</strong> {{ data.patient.display_name }}</p>{% endif %}
+  <h2>Measurements</h2>
+  <table>
+    <thead><tr><th>Measurement</th><th>Value</th><th>Unit</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for name, m in data.measurements.items() %}
+      <tr><td>{{ name }}</td><td>{{ m.value if m is mapping else m }}</td><td>{{ m.unit if m is mapping else '' }}</td><td>{{ m.status if m is mapping else '' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <h2>Warnings / Review Notes</h2>
+  {% if data.warnings %}
+    {% for w in data.warnings %}<div class="warning">{{ w }}</div>{% endfor %}
+  {% else %}<p>None recorded.</p>{% endif %}
+  <p class="muted">AI-assisted measurements are supportive output and require appropriate clinician review before clinical use.</p>
+</body>
+</html>

@@ -1,0 +1,38 @@
+ARG CUDA_BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
+FROM ${CUDA_BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH=/opt/fetal_unified/bin:$PATH \
+    PYTHONPATH=/app:/bridge:/model_repo
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      git \
+      libglib2.0-0 \
+      libgl1 \
+      libgomp1 \
+      libpq5 \
+      libsm6 \
+      libxext6 \
+      libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY env/fetal_biometry_unified.tar.gz /tmp/fetal_biometry_unified.tar.gz
+RUN mkdir -p /opt/fetal_unified \
+    && tar -xzf /tmp/fetal_biometry_unified.tar.gz -C /opt/fetal_unified \
+    && rm /tmp/fetal_biometry_unified.tar.gz \
+    && if [ -x /opt/fetal_unified/bin/conda-unpack ]; then /opt/fetal_unified/bin/conda-unpack; fi
+
+COPY app/ /app/app/
+COPY requirements-worker-host.txt /app/requirements-worker-host.txt
+RUN /opt/fetal_unified/bin/python -m pip install --no-cache-dir -r /app/requirements-worker-host.txt
+
+COPY bridge_cli.py /bridge/bridge_cli.py
+COPY real_pipeline_adapter.py /bridge/real_pipeline_adapter.py
+
+WORKDIR /model_repo
+
+CMD ["/opt/fetal_unified/bin/python", "-m", "app.worker_inference"]

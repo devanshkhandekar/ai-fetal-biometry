@@ -1,0 +1,48 @@
+services:
+  inference-worker-real:
+    image: fetal-biometry-inference:phase4-parity
+    build:
+      context: ./phase4/context
+      dockerfile: Dockerfile.inference.parity
+      args:
+        CUDA_BASE_IMAGE: ${PHASE4_CUDA_BASE_IMAGE:-nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04}
+    env_file:
+      - .env
+      - scripts/phase2.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://fetal:${POSTGRES_PASSWORD:-fetal_local_password}@postgres:5432/${POSTGRES_DB:-fetal_biometry}
+      S3_INTERNAL_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: http://localhost:9000
+      SQS_ENDPOINT: http://elasticmq:9324
+      OIDC_JWKS_URL: http://keycloak:8080/realms/fetal-local/protocol/openid-connect/certs
+      PIPELINE_MODE: subprocess
+      PIPELINE_PYTHON: /opt/fetal_unified/bin/python
+      PIPELINE_BRIDGE_SCRIPT: /bridge/bridge_cli.py
+      MODEL_REPO_PATH: /model_repo
+      PROJECT_BACKEND_CONFIG: /model_repo/configs/project_backend.json
+      HRNET_PYTHON: /opt/fetal_unified/bin/python
+      REAL_SCAN_MODULE: src.orchestration.saas_callable
+      REAL_SCAN_FUNCTION: run_scan
+      REAL_EFW_MODULE: src.orchestration.saas_callable
+      REAL_EFW_FUNCTION: calculate_study_efw
+      ENABLE_STUDY_AGGREGATION: "true"
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+      CUDA_MODULE_LOADING: LAZY
+    volumes:
+      - ./phase4/model-runtime:/model_repo:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      elasticmq:
+        condition: service_started
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    profiles: ["real-gpu"]
+    restart: unless-stopped

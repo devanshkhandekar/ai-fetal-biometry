@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 18mm; }
+    body { font-family: sans-serif; color: #111827; font-size: 10.5pt; }
+    h1 { margin: 0 0 4px; }
+    h2 { margin: 20px 0 8px; }
+    h3 { margin: 14px 0 6px; }
+    .muted { color: #6b7280; }
+    .badge { display:inline-block; border:1px solid #d1d5db; border-radius:4px; padding:2px 6px; margin-right:5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border-bottom: 1px solid #e5e7eb; padding: 6px; text-align: left; }
+    .warning { background: #fff7ed; padding: 8px; margin: 5px 0; border-radius: 4px; }
+    .scan { break-inside: avoid; margin-top: 16px; padding-top: 8px; border-top: 1px solid #d1d5db; }
+    .images { display: flex; gap: 8px; margin-top: 8px; }
+    .image-box { width: 32%; }
+    .image-box img { width: 100%; max-height: 190px; object-fit: contain; border: 1px solid #d1d5db; }
+    .caption { color:#6b7280; font-size: 8.5pt; margin-bottom:3px; }
+  </style>
+</head>
+<body>
+  <h1>Fetal Biometry Report</h1>
+  <div class="muted">Type: {{ report.report_type }} | Language: {{ report.language }}</div>
+  <p><strong>Patient ID:</strong> {{ data.patient.external_id }}</p>
+  {% if data.patient.display_name %}<p><strong>Patient:</strong> {{ data.patient.display_name }}</p>{% endif %}
+
+  <h2>Overall Measurements</h2>
+  <table>
+    <thead><tr><th>Measurement</th><th>Value</th><th>Unit</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for name, m in data.measurements.items() %}
+      <tr><td>{{ name }}</td><td>{{ m.value if m is mapping else m }}</td><td>{{ m.unit if m is mapping else '' }}</td><td>{{ m.status if m is mapping else '' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% if data.study_aggregate %}
+    <p><strong>Study aggregation:</strong> {{ data.study_aggregate.status }}{% if data.study_aggregate.error %} - {{ data.study_aggregate.error }}{% endif %}</p>
+  {% endif %}
+
+  <h2>Scan Review</h2>
+  {% for scan in data.scans %}
+    <section class="scan">
+      <h3>{{ scan.anatomy }} - {{ scan.filename }}</h3>
+      {% set r = scan.result or {} %}
+      <div>
+        <span class="badge">Plane: {{ (r.plane or {}).label or 'N/A' }}</span>
+        <span class="badge">Quality: {{ (r.quality or {}).label or 'N/A' }}</span>
+        <span class="badge">Fusion: {{ (r.fusion or {}).status or 'N/A' }}</span>
+      </div>
+      {% set imgs = scan.report_images or {} %}
+      {% if imgs %}
+      <div class="images">
+        {% if imgs.original %}<div class="image-box"><div class="caption">Original</div><img src="{{ imgs.original }}"></div>{% endif %}
+        {% if imgs.overlay %}<div class="image-box"><div class="caption">AI overlay</div><img src="{{ imgs.overlay }}"></div>{% endif %}
+        {% if imgs.mask %}<div class="image-box"><div class="caption">Predicted mask</div><img src="{{ imgs.mask }}"></div>{% endif %}
+      </div>
+      {% endif %}
+      {% if r.measurements %}
+      <table>
+        <thead><tr><th>Measurement</th><th>Value</th><th>Unit</th><th>Status</th></tr></thead>
+        <tbody>{% for name, m in r.measurements.items() %}<tr><td>{{ name }}</td><td>{{ m.value }}</td><td>{{ m.unit }}</td><td>{{ m.status }}</td></tr>{% endfor %}</tbody>
+      </table>
+      {% endif %}
+      {% for w in r.warnings or [] %}<div class="warning">{{ w }}</div>{% endfor %}
+    </section>
+  {% endfor %}
+
+  <h2>Warnings / Review Notes</h2>
+  {% if data.warnings %}
+    {% for w in data.warnings %}<div class="warning">{{ w }}</div>{% endfor %}
+  {% else %}<p>None recorded.</p>{% endif %}
+
+  <p class="muted">AI-assisted measurements are supportive output and require appropriate clinician review before clinical use.</p>
+</body>
+</html>

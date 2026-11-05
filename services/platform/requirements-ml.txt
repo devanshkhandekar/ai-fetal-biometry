@@ -1,0 +1,13 @@
+# IMPORTANT:
+# Put ONLY your existing fetal-biometry pipeline dependencies here when you
+# are ready to build the optional GPU image. For the first real-model local
+# run, the recommended path is to run app.worker_inference from the already-
+# working Conda/venv that currently runs your Phase 0-7 pipeline.
+#
+# Example only (DO NOT blindly uncomment/version-pin):
+# torch
+# torchvision
+# timm
+# opencv-python-headless
+# pydicom
+# scikit-learn
