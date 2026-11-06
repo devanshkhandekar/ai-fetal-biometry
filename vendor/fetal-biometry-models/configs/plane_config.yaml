@@ -1,0 +1,27 @@
+# Phase-1 advisory plane detection configuration.
+# Do not enable routing during Phase 1.
+
+model:
+  name: FetalCLIP
+  mode: zero_shot
+  config_path: models/checkpoints/fetalclip/FetalCLIP_config.json
+  weights_path: models/checkpoints/fetalclip/FetalCLIP_weights.pt
+  square_pad: true
+  logit_scale: 100.0
+
+policy:
+  # Fill these after scripts/09_tune_plane_thresholds.py.
+  score_threshold: null
+  margin_threshold: null
+  routing_enabled: false
+
+classes:
+  - abdomen
+  - brain
+  - femur
+  - thorax
+  - cervix
+
+open_set:
+  dataset_label: other
+  strategy: score_and_margin_review

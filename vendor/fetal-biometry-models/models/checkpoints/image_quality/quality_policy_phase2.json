@@ -1,0 +1,62 @@
+{
+  "model": "Frozen FetalCLIP embeddings + LogisticRegression",
+  "labels": [
+    "good",
+    "review",
+    "poor"
+  ],
+  "label_source": "HC18 originals + deterministic synthetic degradations",
+  "clinical_ground_truth": false,
+  "best_C": 100.0,
+  "validation_raw_macro_f1": 0.8261514549632322,
+  "candidate_C_metrics": [
+    {
+      "C": 0.01,
+      "validation_macro_f1": 0.5680108142652925
+    },
+    {
+      "C": 0.1,
+      "validation_macro_f1": 0.6900483457595527
+    },
+    {
+      "C": 1.0,
+      "validation_macro_f1": 0.7731921690569982
+    },
+    {
+      "C": 10.0,
+      "validation_macro_f1": 0.820072496173474
+    },
+    {
+      "C": 100.0,
+      "validation_macro_f1": 0.8261514549632322
+    }
+  ],
+  "thresholds_found": true,
+  "good_threshold": 0.8,
+  "margin_threshold": 0.0,
+  "validation_selection": {
+    "good_threshold": 0.8,
+    "margin_threshold": 0.0,
+    "policy_accuracy": 0.7666666666666667,
+    "policy_macro_f1": 0.760667700501168,
+    "good_accept_recall": 0.4866666666666667,
+    "false_good_rate": 0.05,
+    "false_good_count": 15,
+    "poor_as_good_rate": 0.0
+  },
+  "official_proxy_test_raw": {
+    "accuracy": 0.8155555555555556,
+    "macro_f1": 0.8158094826449628
+  },
+  "official_proxy_test_policy": {
+    "policy_accuracy": 0.76,
+    "policy_macro_f1": 0.7494720483597916,
+    "good_accept_recall": 0.43333333333333335,
+    "false_good_rate": 0.04,
+    "false_good_count": 12,
+    "poor_as_good_rate": 0.0
+  },
+  "max_false_good_rate_target": 0.05,
+  "reason": "Validation threshold pair met the configured false-GOOD target.",
+  "mode": "advisory"
+}

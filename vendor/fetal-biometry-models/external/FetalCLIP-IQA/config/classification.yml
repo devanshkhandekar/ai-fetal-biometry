@@ -1,0 +1,26 @@
+model_name: fetalclip # options: densenet, efficientnet, vgg, swin, deit, vit, vit_small, vit_laion, fetalclip
+task: classification
+data_dir: data/acouslic-ai/workshop
+output_dir: outputs
+fetalclip_config_path: FetalCLIP_config.json
+fetalclip_weights_path: FetalCLIP_weights.pt
+
+# dataloader arguments
+num_workers: 8
+batch_size: 8 #32
+
+# trainer arguments
+max_epochs: 5
+
+# number of trials
+num_trials: 5
+
+# data augmentation
+use_augmentation: true
+
+# network settings
+freeze_encoder: true
+use_lora: true
+
+# for debug purpose only
+debug_mode: false

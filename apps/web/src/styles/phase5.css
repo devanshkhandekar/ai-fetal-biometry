@@ -1,0 +1,31 @@
+/* Additive Phase-5 product styling. Import once from your existing app entrypoint. */
+
+:root {
+  --phase5-page-bg: #f6f8fb;
+  --phase5-surface: #ffffff;
+  --phase5-border: #e2e8f0;
+  --phase5-text: #0f172a;
+  --phase5-muted: #64748b;
+}
+
+.phase5-page {
+  background: var(--phase5-page-bg);
+  color: var(--phase5-text);
+}
+
+.phase5-card {
+  background: var(--phase5-surface);
+  border: 1px solid var(--phase5-border);
+  border-radius: 0.875rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.phase5-muted {
+  color: var(--phase5-muted);
+}
+
+.phase5-section-title {
+  color: var(--phase5-text);
+  font-size: 1rem;
+  font-weight: 700;
+}

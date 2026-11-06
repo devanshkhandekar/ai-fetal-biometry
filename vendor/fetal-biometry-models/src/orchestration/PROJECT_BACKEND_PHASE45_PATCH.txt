@@ -1,0 +1,29 @@
+# === ADD WITH THE OTHER IMPORTS ===
+from src.models.landmarks.biometrynet_subprocess import BiometryNetSubprocess
+
+# === ADD NEAR THE END OF ProjectBackend.__init__ ===
+self.biometrynet = BiometryNetSubprocess(
+    config_path="configs/biometrynet_bridge.json"
+)
+
+# === REPLACE measure_abdomen() WITH ===
+def measure_abdomen(self, scan):
+    path = self._path(scan)
+    spacing = self._spacing(scan)
+    roi = scan.roi_xyxy if isinstance(scan, ScanInput) else None
+    return self.biometrynet.measure_abdomen(
+        image_path=path,
+        pixel_spacing_mm=spacing,
+        roi_xyxy=roi,
+    )
+
+# === REPLACE measure_femur() WITH ===
+def measure_femur(self, scan):
+    path = self._path(scan)
+    spacing = self._spacing(scan)
+    roi = scan.roi_xyxy if isinstance(scan, ScanInput) else None
+    return self.biometrynet.measure_femur(
+        image_path=path,
+        pixel_spacing_mm=spacing,
+        roi_xyxy=roi,
+    )

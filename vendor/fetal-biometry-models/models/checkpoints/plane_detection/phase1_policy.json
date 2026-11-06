@@ -1,0 +1,15 @@
+{
+  "model": "FetalCLIP + logistic linear probe",
+  "classes": [
+    "abdomen",
+    "brain",
+    "femur",
+    "thorax",
+    "cervix",
+    "other"
+  ],
+  "score_threshold": 0.5,
+  "margin_threshold": 0.0,
+  "routing_enabled": false,
+  "mode": "advisory"
+}

@@ -1,0 +1,31 @@
+{
+  "hospital_name":
+    "Demo Women's Hospital",
+
+  "address":
+    "Ahmedabad, Gujarat, India",
+
+  "report_title":
+    "Fetal Biometry Report",
+
+  "primary_color":
+    "#16324F",
+
+  "secondary_color":
+    "#2563EB",
+
+  "doctor_name":
+    "Dr. Demo",
+
+  "watermark":
+    false,
+
+  "watermark_text":
+    "CONFIDENTIAL",
+
+  "disclaimer":
+    "AI-assisted measurements are supportive outputs and must be reviewed by a qualified clinician.",
+
+  "logo_path":
+    "/branding/logo.png"
+}

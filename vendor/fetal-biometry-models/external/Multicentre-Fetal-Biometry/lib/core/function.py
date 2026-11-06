@@ -1,0 +1,316 @@
+# ------------------------------------------------------------------------------
+# Copyright (c) Microsoft
+# Licensed under the MIT License.
+# Created by Tianheng Cheng(tianhengcheng@gmail.com)
+# Modified by Netanell Avisdris and Chiara Di Vece (chiara.divece.20@ucl.ac.uk)
+# ------------------------------------------------------------------------------
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import time
+import logging
+
+import torch
+import numpy as np
+
+from .evaluation import decode_preds, compute_nme, compute_l1dist
+
+logger = logging.getLogger(__name__)
+
+
+class AverageMeter(object):
+    """
+    Computes and stores the average and current value of a metric.
+    
+    This is a utility class for tracking metrics during training/validation,
+    such as loss, NME, or processing time.
+    """
+    def __init__(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        """
+        Update the meter with a new value.
+        
+        Args:
+            val: Current value to record
+            n: Number of samples this value represents (default: 1)
+        """
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+
+def train(config, train_loader, model, critertion, optimizer,
+          epoch, writer_dict):
+    """
+    Execute one epoch of training.
+    
+    Args:
+        config: Configuration object
+        train_loader: DataLoader for training data
+        model: Neural network model
+        critertion: Loss function
+        optimizer: Optimizer
+        epoch: Current epoch number
+        writer_dict: Dictionary containing tensorboard writer and global step counters
+    """
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+
+    model.train()
+    nme_count = 0
+    nme_batch_sum = 0
+
+    l1_count = 0
+    l1_batch_sum = 0
+
+    end = time.time()
+
+    for i, (inp, target, meta) in enumerate(train_loader):
+        # measure data time
+        data_time.update(time.time()-end)
+
+        # compute the output
+        output = model(inp)
+        target = target.cuda(non_blocking=True)
+
+        output_fl = torch.sum(output, axis=1)
+        target_fl = torch.sum(target, axis=1)
+
+        loss = critertion(output, target) #+ critertion(output_fl, target_fl)
+
+        # Compute evaluation metrics (NME and L1 distance)
+        score_map = output.data.cpu()
+        preds = decode_preds(score_map, meta['center'], meta['scale'], [64, 64])
+
+        # Normalized Mean Error (NME) - direction-invariant for fetal biometry
+        nme_batch = compute_nme(preds, meta)
+        nme_batch_sum = nme_batch_sum + np.sum(nme_batch)
+        nme_count = nme_count + preds.size(0)
+
+        # L1 distance - absolute difference between predicted and GT measurements
+        l1_batch = compute_l1dist(preds, meta)
+        l1_batch_sum = l1_batch_sum + np.sum(l1_batch)
+        l1_count = l1_count + preds.size(0)
+
+        # optimize
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        losses.update(loss.item(), inp.size(0))
+
+        batch_time.update(time.time()-end)
+        if i % config.PRINT_FREQ == 0:
+            msg = 'Epoch: [{0}][{1}/{2}]\t' \
+                  'Time {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t' \
+                  'Speed {speed:.1f} samples/s\t' \
+                  'Data {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
+                  'Loss {loss.val:.5f} ({loss.avg:.5f})\t'.format(
+                      epoch, i, len(train_loader), batch_time=batch_time,
+                      speed=inp.size(0)/batch_time.val,
+                      data_time=data_time, loss=losses)
+            logger.info(msg)
+
+            if writer_dict:
+                writer = writer_dict['writer']
+                global_steps = writer_dict['train_global_steps']
+                writer.add_scalar('train_loss', losses.val, global_steps)
+                writer_dict['train_global_steps'] = global_steps + 1
+
+        end = time.time()
+    nme = nme_batch_sum / nme_count
+    l1 = l1_batch_sum / l1_count
+
+    msg = 'Train Epoch {} time:{:.4f} loss:{:.4f} nme:{:.4f} l1:{:.2f}'\
+        .format(epoch, batch_time.avg, losses.avg, nme, l1)
+    logger.info(msg)
+
+
+def validate(config, val_loader, model, criterion, epoch, writer_dict):
+    """
+    Validate model performance on validation set.
+    
+    Args:
+        config: Configuration object
+        val_loader: DataLoader for validation data
+        model: Neural network model
+        criterion: Loss function
+        epoch: Current epoch number
+        writer_dict: Dictionary containing tensorboard writer and global step counters
+    
+    Returns:
+        tuple: (nme, predictions) - average NME and all predictions
+    """
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+
+    losses = AverageMeter()
+
+    num_classes = config.MODEL.NUM_JOINTS
+    predictions = torch.zeros((len(val_loader.dataset), num_classes, 2))
+
+    model.eval()
+
+    nme_count = 0
+    nme_batch_sum = 0
+    count_failure_008 = 0
+    count_failure_010 = 0
+    end = time.time()
+
+    l1_count = 0
+    l1_batch_sum = 0
+    with torch.no_grad():
+        for i, (inp, target, meta) in enumerate(val_loader):
+            data_time.update(time.time() - end)
+            output = model(inp)
+            target = target.cuda(non_blocking=True)
+
+            score_map = output.data.cpu()
+            # Compute loss
+            loss = criterion(output, target)
+
+            # Decode predictions from heatmaps to image coordinates
+            preds = decode_preds(score_map, meta['center'], meta['scale'], [64, 64])
+            
+            # Compute Normalized Mean Error (NME)
+            nme_temp = compute_nme(preds, meta)
+            
+            # Calculate failure rates at different NME thresholds
+            # These thresholds indicate poor predictions (8% and 10% NME)
+            failure_008 = (nme_temp > 0.08).sum()
+            failure_010 = (nme_temp > 0.10).sum()
+            count_failure_008 += failure_008
+            count_failure_010 += failure_010
+
+            nme_batch_sum += np.sum(nme_temp)
+            nme_count = nme_count + preds.size(0)
+
+            # Calculate average L1 difference
+            l1_batch = compute_l1dist(preds, meta)
+            l1_batch_sum = l1_batch_sum + np.sum(l1_batch)
+            l1_count = l1_count + preds.size(0)
+
+            for n in range(score_map.size(0)):
+                predictions[meta['index'][n], :, :] = preds[n, :, :]
+
+            losses.update(loss.item(), inp.size(0))
+
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+    nme = nme_batch_sum / nme_count
+    failure_008_rate = count_failure_008 / nme_count
+    failure_010_rate = count_failure_010 / nme_count
+
+    l1 = l1_batch_sum / l1_count
+
+    msg = 'Test Epoch {} time:{:.4f} loss:{:.4f} nme:{:.4f} [008]:{:.4f} ' \
+          '[010]:{:.4f} l1:{:.2f}'.format(epoch, batch_time.avg, losses.avg, nme,
+                                failure_008_rate, failure_010_rate, l1)
+    logger.info(msg)
+
+    if writer_dict:
+        writer = writer_dict['writer']
+        global_steps = writer_dict['valid_global_steps']
+        writer.add_scalar('valid_loss', losses.avg, global_steps)
+        writer.add_scalar('valid_nme', nme, global_steps)
+        writer_dict['valid_global_steps'] = global_steps + 1
+
+    return nme, predictions
+
+
+def inference(config, data_loader, model):
+    """
+    Run inference on test data and compute metrics.
+    
+    Args:
+        config: Configuration object
+        data_loader: DataLoader for test data
+        model: Neural network model
+    
+    Returns:
+        tuple: (nme, nme_mean, nme_std, predictions) containing:
+            - nme: Average NME across all samples
+            - nme_mean: Mean of individual NME values
+            - nme_std: Standard deviation of NME values
+            - predictions: Predicted landmark coordinates for all samples
+    """
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+
+    num_classes = config.MODEL.NUM_JOINTS
+    predictions = torch.zeros((len(data_loader.dataset), num_classes, 2))
+
+    model.eval()
+
+    nme_list = []
+    nme_count = 0
+    nme_batch_sum = 0
+    count_failure_008 = 0
+    count_failure_010 = 0
+    end = time.time()
+
+    with torch.no_grad():
+        for i, (inp, target, meta) in enumerate(data_loader):
+            data_time.update(time.time() - end)
+            output = model(inp)
+            score_map = output.data.cpu()
+            preds = decode_preds(score_map, meta['center'], meta['scale'], [64, 64])
+
+            # NME
+            nme_temp = compute_nme(preds, meta)
+
+            # Collect NME values
+            nme_list.append(nme_temp)
+
+            failure_008 = (nme_temp > 0.08).sum()
+            failure_010 = (nme_temp > 0.10).sum()
+            count_failure_008 += failure_008
+            count_failure_010 += failure_010
+
+            nme_batch_sum += np.sum(nme_temp)
+            nme_count += preds.size(0)
+            for n in range(score_map.size(0)):
+                predictions[meta['index'][n], :, :] = preds[n, :, :]
+
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+    nme = nme_batch_sum / nme_count
+    nme_all = np.concatenate(nme_list)
+    nme_mean = np.mean(nme_all)
+    nme_std = np.std(nme_all)
+
+    failure_008_rate = count_failure_008 / nme_count
+    failure_010_rate = count_failure_010 / nme_count
+
+    msg = 'Test Results time:{:.4f} loss:{:.4f} nme:{:.4f} nme mean:{:.4f} nme std:{:.4f} [008]:{:.4f} ' \
+          '[010]:{:.4f}'.format(batch_time.avg, losses.avg, nme, nme_mean, nme_std,
+                                failure_008_rate, failure_010_rate)
+    logger.info(msg)
+
+    return nme, nme_mean, nme_std, predictions
+
+
+
+
+

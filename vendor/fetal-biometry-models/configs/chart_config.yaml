@@ -1,0 +1,17 @@
+# MVP placeholder GA lookup based on approximate HC-to-GA interpolation.
+# Replace with client-approved chart before clinical/report use.
+hc_ga_table:
+  - {ga_weeks: 14, hc_mm: 98}
+  - {ga_weeks: 16, hc_mm: 124}
+  - {ga_weeks: 18, hc_mm: 151}
+  - {ga_weeks: 20, hc_mm: 178}
+  - {ga_weeks: 22, hc_mm: 204}
+  - {ga_weeks: 24, hc_mm: 230}
+  - {ga_weeks: 26, hc_mm: 255}
+  - {ga_weeks: 28, hc_mm: 277}
+  - {ga_weeks: 30, hc_mm: 298}
+  - {ga_weeks: 32, hc_mm: 318}
+  - {ga_weeks: 34, hc_mm: 334}
+  - {ga_weeks: 36, hc_mm: 347}
+  - {ga_weeks: 38, hc_mm: 360}
+  - {ga_weeks: 40, hc_mm: 372}

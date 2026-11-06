@@ -1,0 +1,28 @@
+
+{
+  "hrnet_python": "/home/devanshot/miniconda3/envs/fetal_biometry_unified/bin/python",
+  "repo_root": "external/Multicentre-Fetal-Biometry",
+  "single_infer_script": "external_adapters/biometrynet_single_infer.py",
+  "timeout_seconds": 180,
+  "cuda_visible_devices": "0",
+  "allow_full_image_fallback": true,
+  "output_dir": "outputs/phase8_landmarks",
+  "abdomen": {
+    "metadata_csv": "data/annotations/FP/Abdomen.csv",
+    "TAD": {
+      "config": "experiments/fetal/fetal_landmark_hrnet_w18_FP_abdomen_TAD.yaml",
+      "checkpoint": "output/FETAL/fetal_landmark_hrnet_w18_MULTICENTRE_abdomen_TAD/final_state.pth"
+    },
+    "APAD": {
+      "config": "experiments/fetal/fetal_landmark_hrnet_w18_FP_abdomen_APAD.yaml",
+      "checkpoint": "output/FETAL/fetal_landmark_hrnet_w18_MULTICENTRE_abdomen_APAD/final_state.pth"
+    }
+  },
+  "femur": {
+    "metadata_csv": "data/annotations/FP/Femur.csv",
+    "FL": {
+      "config": "experiments/fetal/fetal_landmark_hrnet_w18_FP_femur_FL.yaml",
+      "checkpoint": "output/FETAL/fetal_landmark_hrnet_w18_MULTICENTRE_femur_FL/final_state.pth"
+    }
+  }
+}

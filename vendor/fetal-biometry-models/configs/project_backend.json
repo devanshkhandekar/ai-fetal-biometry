@@ -1,0 +1,48 @@
+{
+  "head": {
+    "checkpoint": "models/checkpoints/4a_best_pruned_ft_v10.pth",
+    "variant": "phase4a",
+    "mask_threshold": 0.5,
+    "output_dir": "outputs"
+  },
+  "fetalclip": {
+    "config": "models/checkpoints/fetalclip/FetalCLIP_config.json",
+    "weights": "models/checkpoints/fetalclip/FetalCLIP_weights.pt"
+  },
+  "plane": {
+    "probe": "models/checkpoints/plane_detection/fetalclip_linear_probe_phase1.joblib",
+    "policy_candidates": [
+      "models/checkpoints/plane_detection/phase1_policy.json",
+      "outputs/phase1_plane_detection/linear_probe/metrics.json"
+    ]
+  },
+  "quality": {
+    "probe": "models/checkpoints/image_quality/fetalclip_quality_probe_phase2.joblib",
+    "policy_candidates": [
+      "models/checkpoints/image_quality/quality_policy_phase2.json",
+      "outputs/phase2_image_quality/model/metrics.json"
+    ]
+  },
+  "quality_scope": {
+  "head": {
+    "policy_applicable": true,
+    "affects_routing": true,
+    "affects_fusion": true,
+    "scope": "head_proxy_policy"
+  },
+
+  "abdomen": {
+    "policy_applicable": false,
+    "affects_routing": false,
+    "affects_fusion": false,
+    "scope": "advisory_only_unvalidated_for_abdomen"
+  },
+
+  "femur": {
+    "policy_applicable": false,
+    "affects_routing": false,
+    "affects_fusion": false,
+    "scope": "advisory_only_unvalidated_for_femur"
+  }
+}
+}

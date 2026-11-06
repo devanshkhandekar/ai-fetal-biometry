@@ -1,0 +1,28 @@
+albumentationsx
+jsonargparse
+lightning
+opencv-python
+open-clip-torch
+rich
+pandas
+pillow
+peft
+segmentation-models-pytorch
+SimpleITK
+timm
+torch
+torchmetrics
+torchvision
+tqdm
+wandb
+
+# visualization
+seaborn
+umap-learn
+matplotlib
+scikit-learn
+
+# personal use
+# nvitop
+# ipykernel
+# black

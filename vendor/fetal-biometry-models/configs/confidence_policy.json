@@ -1,0 +1,58 @@
+{
+  "policy_version": "phase3_v1",
+  "quality": {
+    "accept_labels": [
+      "good"
+    ],
+    "review_labels": [
+      "review"
+    ],
+    "reject_labels": [
+      "poor"
+    ]
+  },
+  "plane": {
+    "accept_statuses": [
+      "accept",
+      "accepted",
+      "ready"
+    ],
+    "review_statuses": [
+      "review",
+      "unconfigured"
+    ],
+    "reject_statuses": [
+      "reject",
+      "rejected",
+      "invalid"
+    ]
+  },
+  "measurement": {
+    "accept_statuses": [
+      "accept",
+      "accepted",
+      "valid",
+      "passed",
+      "ok"
+    ],
+    "review_statuses": [
+      "review",
+      "warning",
+      "warn"
+    ],
+    "reject_statuses": [
+      "reject",
+      "rejected",
+      "invalid",
+      "failed",
+      "error"
+    ],
+    "review_below_confidence": 0.65,
+    "reject_below_confidence": 0.3
+  },
+  "supported_application_planes": [
+    "head",
+    "abdomen",
+    "femur"
+  ]
+}

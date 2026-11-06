@@ -1,8 +1,149 @@
+# ============================================================
+# Secrets / environment
+# ============================================================
+
 .env
-__pycache__/
-*.pyc
-node_modules/
-dist/
+.env.*
+!.env.example
+!*.env.example
+
+scripts/phase5.env
+
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ============================================================
+# Python environments
+# ============================================================
+
 .venv/
-.env.local
+venv/
+env/
+ENV/
+.conda/
+
+# Python generated files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage/
+htmlcov/
+
+# ============================================================
+# Node / React
+# ============================================================
+
+node_modules/
+**/node_modules/
+
+dist/
+**/dist/
+
+build/
+**/build/
+
+.vite/
+**/.vite/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ============================================================
+# IDE / OS
+# ============================================================
+
+.vscode/
+.idea/
+
 .DS_Store
+Thumbs.db
+
+*~
+*.swp
+*.swo
+
+# ============================================================
+# Local runtime / temporary files
+# ============================================================
+
+tmp/
+temp/
+.cache/
+
+logs/
+*.log
+
+backups/
+
+# Old staging frontend created during Phase 5
+web.phase5-staging/
+
+# ============================================================
+# Generated application/runtime data
+# ============================================================
+
+uploads/
+local-data/
+
+reports/generated/
+artifacts/generated/
+
+# ============================================================
+# ML training outputs / caches
+# ============================================================
+
+wandb/
+runs/
+outputs/
+checkpoints_tmp/
+
+**/wandb/
+**/runs/
+**/outputs/
+
+# HuggingFace / Torch caches
+**/.cache/huggingface/
+**/.cache/torch/
+
+# ============================================================
+# Datasets
+# Do not upload clinical/research datasets into application repo
+# ============================================================
+
+datasets/
+data/raw/
+data/private/
+data/patient_data/
+
+# ============================================================
+# Local database/runtime folders, if present
+# ============================================================
+
+postgres-data/
+minio-data/
+keycloak-data/
+elasticmq-data/
+
+# ============================================================
+# Backup/edit files
+# ============================================================
+
+*.before_phase5
+*.before_branding
+*.before_phase5_fonts
+*.bak
+
+# Large upstream archive; extracted runtime files are tracked separately
+/vendor/fetal-biometry-models/external/Multicentre-Fetal-Biometry/pretrained-models.zip

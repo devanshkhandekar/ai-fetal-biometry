@@ -22,7 +22,11 @@ from app.models import InferenceRun, Report, ScanObject, Study
 from app.queueing import receive
 from app.services import build_study_report_json
 from app.storage import download_file, upload_file
+from app.branding import load_branding
 
+from app.report_i18n import (
+    get_report_labels,
+)
 
 TEMPLATE_DIR = (
     Path(__file__).resolve().parent.parent
@@ -484,10 +488,9 @@ def process_report(
                 )
             )
 
-            html = template.render(
-                report=report,
-                data=safe_data,
-            )
+            branding = load_branding()
+            labels = get_report_labels(report.language)
+            html = template.render(report=report,data=safe_data,branding=branding,labels=labels,)
 
             # --------------------------------------------
             # Generate PDF

@@ -1,0 +1,28 @@
+services:
+
+  api:
+    env_file:
+      - .env
+      - scripts/phase2.env
+      - scripts/phase5.env
+
+    environment:
+      ENABLE_OPENAI: ${ENABLE_OPENAI:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-6-luna}
+      OPENAI_TIMEOUT_SECONDS: ${OPENAI_TIMEOUT_SECONDS:-45}
+
+  report-worker:
+    env_file:
+      - .env
+      - scripts/phase2.env
+      - scripts/phase5.env
+
+    environment:
+      ENABLE_OPENAI: ${ENABLE_OPENAI:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-6-luna}
+      HOSPITAL_BRANDING_FILE: /branding/branding.json
+
+    volumes:
+      - ./branding:/branding:ro

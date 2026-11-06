@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
 import { initAuth } from './auth'
 import './index.css'
+import './styles/phase5.css'
 
 const queryClient = new QueryClient()
 

@@ -1,78 +1,408 @@
 <!doctype html>
-<html>
+{% set b = branding|default({}, true) %}
+{% set l = labels|default({}, true) %}
+{% set lang = (report.language or 'English')|lower %}
+{% set is_rtl = lang in ['ar', 'arabic'] %}
+{% set primary = b.primary_color|default('#16324F', true) %}
+{% set secondary = b.secondary_color|default('#2563EB', true) %}
+
+<html lang="{{ lang }}" dir="{{ 'rtl' if is_rtl else 'ltr' }}">
 <head>
   <meta charset="utf-8">
   <style>
-    @page { size: A4; margin: 18mm; }
-    body { font-family: sans-serif; color: #111827; font-size: 10.5pt; }
-    h1 { margin: 0 0 4px; }
-    h2 { margin: 20px 0 8px; }
-    h3 { margin: 14px 0 6px; }
+    @page {
+      size: A4;
+      margin: 17mm 16mm 18mm 16mm;
+
+      @bottom-right {
+        content: "Page " counter(page) " / " counter(pages);
+        font-family: "Noto Sans", sans-serif;
+        font-size: 8pt;
+        color: #6b7280;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: #111827;
+      font-size: 10pt;
+      line-height: 1.45;
+      direction: {{ 'rtl' if is_rtl else 'ltr' }};
+      text-align: {{ 'right' if is_rtl else 'left' }};
+      font-family:
+        "Noto Sans",
+        "Noto Sans Devanagari",
+        "Noto Sans Gujarati",
+        "Noto Sans Tamil",
+        "Noto Sans Telugu",
+        "Noto Sans Arabic",
+        "DejaVu Sans",
+        sans-serif;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      margin-bottom: 3px;
+      color: {{ primary }};
+      font-size: 19pt;
+      line-height: 1.2;
+    }
+
+    h2 {
+      margin: 18px 0 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #d1d5db;
+      color: {{ primary }};
+      font-size: 13pt;
+    }
+
+    h3 {
+      margin: 12px 0 6px;
+      font-size: 11pt;
+    }
+
+    .report-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 15px;
+      padding-bottom: 11px;
+      border-bottom: 3px solid {{ primary }};
+    }
+
+    .hospital-logo {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+
+    .header-content { flex: 1; }
+
+    .hospital-name {
+      margin-top: 3px;
+      font-size: 11pt;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .hospital-address,
     .muted { color: #6b7280; }
-    .badge { display:inline-block; border:1px solid #d1d5db; border-radius:4px; padding:2px 6px; margin-right:5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-    th, td { border-bottom: 1px solid #e5e7eb; padding: 6px; text-align: left; }
-    .warning { background: #fff7ed; padding: 8px; margin: 5px 0; border-radius: 4px; }
-    .scan { break-inside: avoid; margin-top: 16px; padding-top: 8px; border-top: 1px solid #d1d5db; }
-    .images { display: flex; gap: 8px; margin-top: 8px; }
-    .image-box { width: 32%; }
-    .image-box img { width: 100%; max-height: 190px; object-fit: contain; border: 1px solid #d1d5db; }
-    .caption { color:#6b7280; font-size: 8.5pt; margin-bottom:3px; }
+
+    .report-meta {
+      margin-top: 4px;
+      font-size: 8.5pt;
+      color: #6b7280;
+    }
+
+    .patient-box {
+      margin-top: 10px;
+      padding: 9px 11px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      background: #f8fafc;
+    }
+
+    .patient-box p { margin: 2px 0; }
+
+    .badge {
+      display: inline-block;
+      margin: 2px 5px 2px 0;
+      padding: 2px 7px;
+      border: 1px solid #d1d5db;
+      border-radius: 999px;
+      background: #f8fafc;
+      font-size: 8.5pt;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 7px;
+      border-collapse: collapse;
+      page-break-inside: auto;
+    }
+
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+
+    th {
+      background: #f3f4f6;
+      color: #374151;
+      font-weight: 700;
+    }
+
+    th, td {
+      padding: 6px 7px;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+      text-align: {{ 'right' if is_rtl else 'left' }};
+      overflow-wrap: anywhere;
+    }
+
+    .value-cell,
+    .unit-cell,
+    .status-cell { white-space: nowrap; }
+
+    .aggregation {
+      margin-top: 10px;
+      padding: 7px 9px;
+      border-left: 3px solid {{ secondary }};
+      background: #eff6ff;
+    }
+
+    .scan {
+      margin-top: 15px;
+      padding-top: 9px;
+      border-top: 1px solid #d1d5db;
+      break-inside: avoid;
+    }
+
+    .images {
+      display: flex;
+      gap: 8px;
+      margin-top: 9px;
+      align-items: flex-start;
+    }
+
+    .image-box {
+      width: 32%;
+      break-inside: avoid;
+    }
+
+    .image-box img {
+      display: block;
+      width: 100%;
+      max-height: 190px;
+      object-fit: contain;
+      border: 1px solid #d1d5db;
+      background: #000;
+    }
+
+    .caption {
+      margin-bottom: 3px;
+      color: #6b7280;
+      font-size: 8pt;
+    }
+
+    .warning {
+      margin: 5px 0;
+      padding: 7px 9px;
+      border-left: 3px solid #f59e0b;
+      border-radius: 4px;
+      background: #fff7ed;
+      color: #92400e;
+      break-inside: avoid;
+    }
+
+    .none {
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .medical-disclaimer {
+      margin-top: 20px;
+      padding-top: 9px;
+      border-top: 1px solid #d1d5db;
+      color: #6b7280;
+      font-size: 8.5pt;
+      line-height: 1.4;
+    }
+
+    .signature {
+      margin-top: 22px;
+      break-inside: avoid;
+    }
+
+    .signature-line {
+      width: 220px;
+      margin-top: 28px;
+      border-top: 1px solid #9ca3af;
+      padding-top: 4px;
+      font-size: 8.5pt;
+      color: #6b7280;
+    }
+
+    {% if b.watermark|default(false) %}
+    .watermark {
+      position: fixed;
+      top: 43%;
+      left: 12%;
+      width: 76%;
+      text-align: center;
+      transform: rotate(-32deg);
+      color: rgba(107, 114, 128, 0.10);
+      font-size: 46pt;
+      font-weight: 700;
+      z-index: -1;
+    }
+    {% endif %}
   </style>
 </head>
-<body>
-  <h1>Fetal Biometry Report</h1>
-  <div class="muted">Type: {{ report.report_type }} | Language: {{ report.language }}</div>
-  <p><strong>Patient ID:</strong> {{ data.patient.external_id }}</p>
-  {% if data.patient.display_name %}<p><strong>Patient:</strong> {{ data.patient.display_name }}</p>{% endif %}
 
-  <h2>Overall Measurements</h2>
+<body>
+
+  {% if b.watermark|default(false) %}
+    <div class="watermark">
+      {{ b.watermark_text|default('CONFIDENTIAL', true) }}
+    </div>
+  {% endif %}
+
+  <header class="report-header">
+    {% if b.logo_data_uri %}
+      <img src="{{ b.logo_data_uri }}" class="hospital-logo" alt="Hospital logo">
+    {% endif %}
+
+    <div class="header-content">
+      <h1>{{ b.report_title|default('Fetal Biometry Report', true) }}</h1>
+
+      <div class="hospital-name">
+        {{ b.hospital_name|default('Fetal Biometry Platform', true) }}
+      </div>
+
+      {% if b.address %}
+        <div class="hospital-address">{{ b.address }}</div>
+      {% endif %}
+
+      <div class="report-meta">
+        {{ report.report_type }} · {{ report.language }}
+      </div>
+    </div>
+  </header>
+
+  <section class="patient-box">
+    <p><strong>Patient ID:</strong> {{ data.patient.external_id }}</p>
+
+    {% if data.patient.display_name %}
+      <p><strong>Patient:</strong> {{ data.patient.display_name }}</p>
+    {% endif %}
+  </section>
+
+  <h2>{{ l.measurements|default('Measurements', true) }}</h2>
+
   <table>
-    <thead><tr><th>Measurement</th><th>Value</th><th>Unit</th><th>Status</th></tr></thead>
+    <thead>
+      <tr>
+        <th>{{ l.measurement|default('Measurement', true) }}</th>
+        <th>{{ l.value|default('Value', true) }}</th>
+        <th>{{ l.unit|default('Unit', true) }}</th>
+        <th>{{ l.status|default('Status', true) }}</th>
+      </tr>
+    </thead>
     <tbody>
-    {% for name, m in data.measurements.items() %}
-      <tr><td>{{ name }}</td><td>{{ m.value if m is mapping else m }}</td><td>{{ m.unit if m is mapping else '' }}</td><td>{{ m.status if m is mapping else '' }}</td></tr>
-    {% endfor %}
+      {% for name, m in data.measurements.items() %}
+        <tr>
+          <td>{{ name }}</td>
+          <td class="value-cell">{{ m.value if m is mapping else m }}</td>
+          <td class="unit-cell">{{ m.unit if m is mapping else '' }}</td>
+          <td class="status-cell">{{ m.status if m is mapping else '' }}</td>
+        </tr>
+      {% endfor %}
     </tbody>
   </table>
 
   {% if data.study_aggregate %}
-    <p><strong>Study aggregation:</strong> {{ data.study_aggregate.status }}{% if data.study_aggregate.error %} - {{ data.study_aggregate.error }}{% endif %}</p>
+    <div class="aggregation">
+      <strong>Study aggregation:</strong>
+      {{ data.study_aggregate.status }}
+      {% if data.study_aggregate.error %} — {{ data.study_aggregate.error }}{% endif %}
+    </div>
   {% endif %}
 
   <h2>Scan Review</h2>
+
   {% for scan in data.scans %}
     <section class="scan">
-      <h3>{{ scan.anatomy }} - {{ scan.filename }}</h3>
+      <h3>{{ scan.anatomy }} — {{ scan.filename }}</h3>
+
       {% set r = scan.result or {} %}
+
       <div>
         <span class="badge">Plane: {{ (r.plane or {}).label or 'N/A' }}</span>
         <span class="badge">Quality: {{ (r.quality or {}).label or 'N/A' }}</span>
         <span class="badge">Fusion: {{ (r.fusion or {}).status or 'N/A' }}</span>
       </div>
+
       {% set imgs = scan.report_images or {} %}
       {% if imgs %}
-      <div class="images">
-        {% if imgs.original %}<div class="image-box"><div class="caption">Original</div><img src="{{ imgs.original }}"></div>{% endif %}
-        {% if imgs.overlay %}<div class="image-box"><div class="caption">AI overlay</div><img src="{{ imgs.overlay }}"></div>{% endif %}
-        {% if imgs.mask %}<div class="image-box"><div class="caption">Predicted mask</div><img src="{{ imgs.mask }}"></div>{% endif %}
-      </div>
+        <div class="images">
+          {% if imgs.original %}
+            <div class="image-box">
+              <div class="caption">Original</div>
+              <img src="{{ imgs.original }}" alt="Original ultrasound">
+            </div>
+          {% endif %}
+
+          {% if imgs.overlay %}
+            <div class="image-box">
+              <div class="caption">AI overlay</div>
+              <img src="{{ imgs.overlay }}" alt="AI overlay">
+            </div>
+          {% endif %}
+
+          {% if imgs.mask %}
+            <div class="image-box">
+              <div class="caption">Predicted mask</div>
+              <img src="{{ imgs.mask }}" alt="Predicted mask">
+            </div>
+          {% endif %}
+        </div>
       {% endif %}
+
       {% if r.measurements %}
-      <table>
-        <thead><tr><th>Measurement</th><th>Value</th><th>Unit</th><th>Status</th></tr></thead>
-        <tbody>{% for name, m in r.measurements.items() %}<tr><td>{{ name }}</td><td>{{ m.value }}</td><td>{{ m.unit }}</td><td>{{ m.status }}</td></tr>{% endfor %}</tbody>
-      </table>
+        <table>
+          <thead>
+            <tr>
+              <th>{{ l.measurement|default('Measurement', true) }}</th>
+              <th>{{ l.value|default('Value', true) }}</th>
+              <th>{{ l.unit|default('Unit', true) }}</th>
+              <th>{{ l.status|default('Status', true) }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for name, m in r.measurements.items() %}
+              <tr>
+                <td>{{ name }}</td>
+                <td class="value-cell">{{ m.value }}</td>
+                <td class="unit-cell">{{ m.unit }}</td>
+                <td class="status-cell">{{ m.status }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       {% endif %}
-      {% for w in r.warnings or [] %}<div class="warning">{{ w }}</div>{% endfor %}
+
+      {% for w in r.warnings or [] %}
+        <div class="warning">{{ w }}</div>
+      {% endfor %}
     </section>
   {% endfor %}
 
-  <h2>Warnings / Review Notes</h2>
-  {% if data.warnings %}
-    {% for w in data.warnings %}<div class="warning">{{ w }}</div>{% endfor %}
-  {% else %}<p>None recorded.</p>{% endif %}
+  <h2>{{ l.warnings|default('Warnings / Review Notes', true) }}</h2>
 
-  <p class="muted">AI-assisted measurements are supportive output and require appropriate clinician review before clinical use.</p>
+  {% if data.warnings %}
+    {% for w in data.warnings %}
+      <div class="warning">{{ w }}</div>
+    {% endfor %}
+  {% else %}
+    <p class="none">None recorded.</p>
+  {% endif %}
+
+  {% if report.report_type == 'DOCTOR' %}
+    <section class="signature">
+      {% if b.doctor_name %}<strong>{{ b.doctor_name }}</strong>{% endif %}
+      <div class="signature-line">Doctor signature / review</div>
+    </section>
+  {% endif %}
+
+  <footer class="medical-disclaimer">
+    {{ b.disclaimer|default(
+      'AI-assisted measurements are supportive outputs and must be reviewed by a qualified clinician before clinical use.',
+      true
+    ) }}
+  </footer>
+
 </body>
 </html>
